@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>共路距离计算器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #0a0e1a;
+            background-image:
+                radial-gradient(ellipse at 20% 0%, rgba(255,107,53,0.10) 0%, transparent 45%),
+                radial-gradient(ellipse at 80% 100%, rgba(0,212,255,0.08) 0%, transparent 45%);
+            background-attachment: fixed;
+            color: #e8eaf0;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .container { max-width: 560px; margin: 0 auto; }
+        /* ===== 头部 ===== */
+        .header {
+            text-align: center;
+            padding: 28px 20px 22px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 64px; height: 3px;
+            background: linear-gradient(90deg, #ff6b35, #00d4ff);
+            border-radius: 2px;
+        }
+        .header-title {
+            font-size: 23px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 7px;
+            letter-spacing: 1px;
+        }
+        .header-sub {
+            font-size: 13px;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: 0.5px;
+        }
+        /* ===== 玻璃卡片 ===== */
+        .glass-card {
+            background: rgba(255,255,255,0.035);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        }
+        /* ===== 区块标题 ===== */
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title::before {
+            content: '';
+            width: 3px; height: 16px;
+            background: linear-gradient(180deg, #ff6b35, #00d4ff);
+            border-radius: 2px;
+        }
+        /* ===== 分组标题 ===== */
+        .group-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 1px;
+            margin: 4px 0 10px;
+            padding-left: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .group-title .line {
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+        }
+        /* ===== 表单 ===== */
+        .form-group { margin-bottom: 14px; }
+        .form-group:last-of-type { margin-bottom: 18px; }
+        .form-label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: rgba(255,255,255,0.85);
+            font-weight: 600;
+        }
+        .label-desc {
+            font-size: 12px;
+            color: rgba(255,255,255,0.35);
+            font-weight: normal;
+            margin-left: auto;
+        }
+        .point-tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px; height: 26px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-right: 10px;
+            color: #fff;
+        }
+        .point-a { background: linear-gradient(135deg, #ff6b35, #ff8c5a); box-shadow: 0 2px 10px rgba(255,107,53,0.4); }
+        .point-b { background: linear-gradient(135deg, #00d4ff, #00b8e6); box-shadow: 0 2px 10px rgba(0,212,255,0.4); }
+        .point-c { background: linear-gradient(135deg, #00d4ff, #00b8e6); box-shadow: 0 2px 10px rgba(0,212,255,0.4); }
+        .point-d { background: linear-gradient(135deg, #ff6b35, #ff8c5a); box-shadow: 0 2px 10px rgba(255,107,53,0.4); }
+        .input-wrap { position: relative; }
+        .tech-input {
+            width: 100%;
+            padding: 14px 50px 14px 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        .tech-input:focus {
+            outline: none;
+            border-color: rgba(255,107,53,0.6);
+            box-shadow: 0 0 0 3px rgba(255,107,53,0.12), 0 0 20px rgba(255,107,53,0.08);
+            background: rgba(255,255,255,0.06);
+        }
+        .tech-input::placeholder { color: rgba(255,255,255,0.28); }
+        .clean-icon-btn {
+            position: absolute;
+            right: 8px; top: 50%;
+            transform: translateY(-50%);
+            width: 34px; height: 34px;
+            border: none;
+            background: rgba(255,255,255,0.06);
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .clean-icon-btn:hover { background: rgba(255,255,255,0.12); }
+        /* ===== 按钮 ===== */
+        .calc-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(255,107,53,0.35);
+            letter-spacing: 2px;
+        }
+        .calc-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(255,107,53,0.45); }
+        .calc-btn:active { transform: translateY(0); }
+        .calc-btn:disabled { background: rgba(255,255,255,0.08); box-shadow: none; cursor: not-allowed; color: rgba(255,255,255,0.4); }
+        .clear-link {
+            background: none; border: none;
+            color: rgba(255,255,255,0.4);
+            font-size: 13px; cursor: pointer;
+            padding: 4px 8px;
+            text-decoration: underline;
+            width: auto; box-shadow: none;
+            letter-spacing: 0;
+        }
+        .clear-link:hover { color: #ff8c5a; }
+        /* ===== 状态 ===== */
+        .status-text {
+            text-align: center;
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 12px;
+            min-height: 18px;
+        }
+        .loading-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            background: #ff6b35;
+            border-radius: 50%;
+            margin-right: 6px;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .error-box {
+            background: rgba(255,77,79,0.1);
+            border: 1px solid rgba(255,77,79,0.3);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            font-size: 13px;
+            color: #ff8a80;
+            line-height: 1.6;
+        }
+        /* ===== 最优路径标签 ===== */
+        .optimal-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.05));
+            border: 1px solid rgba(0,212,255,0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #00d4ff;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        /* ===== 路线流程图 ===== */
+        .route-flow {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 8px 4px;
+        }
+        .route-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .route-node .node-dot {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.15);
+        }
+        .route-node .node-role {
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            margin-top: -4px;
+        }
+        .route-node .node-name {
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+            max-width: 64px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.3;
+        }
+        .route-line {
+            flex: 1;
+            height: 3px;
+            margin: 16px 2px 0;
+            border-radius: 2px;
+            flex-shrink: 1;
+            min-width: 12px;
+            position: relative;
+        }
+        .route-line.solo { background: rgba(0,212,255,0.25); }
+        .route-line.shared {
+            background: linear-gradient(90deg, #ff6b35, #ff8c5a);
+            box-shadow: 0 0 10px rgba(255,107,53,0.5);
+        }
+        .route-line.empty {
+            background: repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0, rgba(255,255,255,0.15) 4px, transparent 4px, transparent 8px);
+        }
+        .route-line .line-dist {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: rgba(255,255,255,0.5);
+            white-space: nowrap;
+        }
+        /* ===== 一览统计 ===== */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px;
+            padding: 14px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .stat-card:hover { border-color: rgba(255,255,255,0.15); }
+        .stat-card.highlight {
+            border-color: rgba(255,107,53,0.35);
+            background: linear-gradient(135deg, rgba(255,107,53,0.1), rgba(255,107,53,0.02));
+        }
+        .stat-card.highlight::after {
+            content: '';
+            position: absolute;
+            top: -30px; right: -30px;
+            width: 80px; height: 80px;
+            background: radial-gradient(circle, rgba(255,107,53,0.15), transparent 70%);
+            pointer-events: none;
+        }
+        .stat-card.cyan {
+            border-color: rgba(0,212,255,0.3);
+            background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(0,212,255,0.02));
+        }
+        .stat-card .stat-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.45);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .stat-card .stat-value {
+            font-size: 26px;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1;
+        }
+        .stat-card.highlight .stat-value { color: #ff8c5a; }
+        .stat-card.cyan .stat-value { color: #00d4ff; }
+        .stat-card .stat-unit {
+            font-size: 13px;
+            color: rgba(255,255,255,0.35);
+            margin-left: 3px;
+            font-weight: 500;
+        }
+        /* ===== 共路英雄卡片 ===== */
+        .shared-hero {
+            background: linear-gradient(135deg, rgba(255,107,53,0.12), rgba(255,107,53,0.02));
+            border: 1px solid rgba(255,107,53,0.25);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        .shared-hero::before {
+            content: '';
+            position: absolute;
+            top: -60px; right: -40px;
+            width: 220px; height: 220px;
+            background: radial-gradient(circle, rgba(255,107,53,0.12), transparent 70%);
+            pointer-events: none;
+        }
+        .shared-hero .hero-label {
+            font-size: 13px;
+            color: #ff8c5a;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+            z-index: 1;
+        }
+        .shared-hero .hero-num {
+            font-size: 40px;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1;
+            position: relative;
+            z-index: 1;
+        }
+        .shared-hero .hero-unit {
+            font-size: 16px;
+            color: rgba(255,255,255,0.45);
+            margin-left: 5px;
+            font-weight: 500;
+        }
+        .progress-track {
+            height: 6px;
+            background: rgba(255,255,255,0.07);
+            border-radius: 3px;
+            margin-top: 16px;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b35, #ff8c5a);
+            border-radius: 3px;
+            transition: width 0.6s ease;
+            box-shadow: 0 0 12px rgba(255,107,53,0.5);
+        }
+        .progress-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 7px;
+            text-align: right;
+            position: relative;
+            z-index: 1;
+        }
+        /* ===== 拼单绕路卡片 ===== */
+        .detour-card {
+            background: linear-gradient(135deg, rgba(255,184,0,0.1), rgba(255,184,0,0.02));
+            border: 1px solid rgba(255,184,0,0.25);
+            border-radius: 16px;
+            padding: 16px 18px;
+            margin-bottom: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+        .detour-card::before {
+            content: '';
+            position: absolute;
+            top: -50px; right: -30px;
+            width: 180px; height: 180px;
+            background: radial-gradient(circle, rgba(255,184,0,0.1), transparent 70%);
+            pointer-events: none;
+        }
+        .detour-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            z-index: 1;
+        }
+        .detour-title {
+            font-size: 13px;
+            color: #ffb800;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .detour-desc {
+            font-size: 11px;
+            color: rgba(255,255,255,0.35);
+            font-weight: normal;
+            margin-top: 4px;
+        }
+        .detour-big {
+            font-size: 34px;
+            font-weight: 800;
+            color: #ffb800;
+            line-height: 1;
+            text-align: right;
+        }
+        .detour-big .detour-unit {
+            font-size: 14px;
+            color: rgba(255,255,255,0.45);
+            margin-left: 3px;
+            font-weight: 500;
+        }
+        .detour-compare {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            position: relative;
+            z-index: 1;
+            flex-wrap: wrap;
+        }
+        .detour-compare .num {
+            color: rgba(255,255,255,0.85);
+            font-weight: 600;
+        }
+        .detour-compare .arrow {
+            color: rgba(255,255,255,0.3);
+        }
+        /* ===== 地图面板 ===== */
+        .map-panel-wrap {
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 14px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.02);
+        }
+        .map-panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: rgba(255,255,255,0.025);
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .map-panel-head:active { background: rgba(255,255,255,0.05); }
+        .map-panel-head .head-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8); }
+        .map-panel-head .head-arrow { font-size: 12px; color: rgba(255,255,255,0.4); transition: transform 0.3s; }
+        .map-panel-wrap.collapsed .head-arrow { transform: rotate(-90deg); }
+        .map-panel-body { max-height: 2000px; transition: max-height 0.35s ease; overflow: hidden; }
+        .map-panel-wrap.collapsed .map-panel-body { max-height: 0; }
+        #mapContainer { width: 100%; height: 300px; background: #141928; }
+        .map-placeholder {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            color: rgba(255,255,255,0.25); font-size: 13px;
+        }
+        .map-placeholder .big { font-size: 40px; margin-bottom: 10px; opacity: 0.4; }
+        .map-legend {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            padding: 12px 0;
+            font-size: 12px;
+            color: rgba(255,255,255,0.45);
+            flex-wrap: wrap;
+            background: rgba(255,255,255,0.015);
+        }
+        .legend-line {
+            display: inline-block;
+            width: 24px; height: 4px;
+            border-radius: 2px;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        /* ===== 数据明细 ===== */
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .data-row:last-child { border-bottom: none; }
+        .data-row .row-label {
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2px;
+        }
+        .data-row .row-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            text-align: right;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+        .data-row .row-value small {
+            display: block;
+            font-size: 11px;
+            color: rgba(255,255,255,0.35);
+            font-weight: normal;
+            margin-top: 3px;
+        }
+        .data-row.shared-row {
+            background: linear-gradient(90deg, rgba(255,107,53,0.08), transparent);
+            margin: 0 -18px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            border-bottom: none;
+        }
+        .data-row.shared-row .row-value { color: #ff8c5a; }
+        .data-row.empty-row {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03), transparent);
+            margin: 0 -18px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            border-bottom: none;
+        }
+        .data-row.empty-row .row-value { color: rgba(255,255,255,0.5); }
+        .data-row.total-row .row-value { color: #ff8c5a; font-size: 20px; }
+        /* ===== 徽章 ===== */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 8px;
+            vertical-align: middle;
+            font-weight: 500;
+        }
+        .badge-solo { background: rgba(0,212,255,0.12); color: #00d4ff; }
+        .badge-shared { background: rgba(255,107,53,0.12); color: #ff8c5a; }
+        .badge-empty { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
+        .badge-main { background: rgba(255,107,53,0.12); color: #ff8c5a; }
+        .badge-sub { background: rgba(0,212,255,0.12); color: #00d4ff; }
+        /* ===== 导航胶囊按钮 ===== */
+        .navi-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            background: rgba(0,212,255,0.1);
+            border: 1px solid rgba(0,212,255,0.25);
+            border-radius: 20px;
+            color: #00d4ff;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .navi-pill:hover { background: rgba(0,212,255,0.18); }
+        .navi-pill.shared {
+            background: rgba(255,107,53,0.1);
+            border-color: rgba(255,107,53,0.25);
+            color: #ff8c5a;
+        }
+        .navi-pill.shared:hover { background: rgba(255,107,53,0.18); }
+        /* ===== 底部 ===== */
+        .footer-tip {
+            font-size: 12px;
+            color: rgba(255,255,255,0.25);
+            text-align: center;
+            line-height: 1.8;
+            margin-top: 12px;
+            padding-bottom: 20px;
+        }
+        /* ===== 行程备注 ===== */
+        .remark-block {
+            padding: 11px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .remark-block:last-child { border-bottom: none; padding-bottom: 2px; }
+        .remark-block:first-child { padding-top: 2px; }
+        .remark-head {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .remark-count { font-size: 11px; color: rgba(255,255,255,0.32); font-weight: 400; }
+        .remark-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+        .remark-tag {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            line-height: 1.4;
+            border: 1px solid transparent;
+        }
+        .remark-tag.entry {
+            color: #ffb089;
+            background: rgba(255,107,53,0.12);
+            border-color: rgba(255,107,53,0.3);
+        }
+        .remark-tag.exit {
+            color: #7fe6ff;
+            background: rgba(0,212,255,0.1);
+            border-color: rgba(0,212,255,0.28);
+        }
+        .remark-chain {
+            font-size: 12.5px;
+            color: rgba(255,255,255,0.78);
+            line-height: 1.9;
+        }
+        .remark-chain .arrow { color: rgba(255,255,255,0.3); margin: 0 5px; font-size: 11px; }
+        .remark-empty { font-size: 12px; color: rgba(255,255,255,0.32); }
+        /* ===== 拼单合格性横幅 ===== */
+        .judge-banner {
+            display: flex; gap: 12px; align-items: flex-start;
+            padding: 14px 16px; border-radius: 14px; margin-bottom: 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .judge-banner.good { background: rgba(46,204,113,0.1); border-color: rgba(46,204,113,0.35); }
+        .judge-banner.warn { background: rgba(255,170,40,0.1); border-color: rgba(255,170,40,0.35); }
+        .judge-banner.bad { background: rgba(255,77,79,0.12); border-color: rgba(255,77,79,0.4); }
+        .judge-icon { font-size: 20px; line-height: 1.3; }
+        .judge-info { flex: 1; min-width: 0; }
+        .judge-title { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+        .judge-banner.good .judge-title { color: #4ade80; }
+        .judge-banner.warn .judge-title { color: #ffb020; }
+        .judge-banner.bad .judge-title { color: #ff6b6b; }
+        .judge-desc { font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.6; }
+        .judge-metrics { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 7px; font-size: 11.5px; color: rgba(255,255,255,0.5); }
+        .judge-metric b { font-weight: 700; color: rgba(255,255,255,0.85); }
+        /* 小客车路线提示条 */
+        .route-notice {
+            display: flex; gap: 10px; align-items: flex-start;
+            padding: 12px 14px; border-radius: 12px; margin-bottom: 14px;
+            background: rgba(64,158,255,0.1); border: 1px solid rgba(64,158,255,0.35);
+        }
+        .route-notice .notice-icon { font-size: 16px; line-height: 1.4; }
+        .route-notice .notice-body { flex: 1; min-width: 0; }
+        .route-notice .notice-title { font-size: 13px; font-weight: 800; color: #5aa9ff; margin-bottom: 3px; }
+        .route-notice .notice-desc { font-size: 11.5px; color: rgba(255,255,255,0.62); line-height: 1.6; }
+        .route-notice .notice-desc b { color: #8fc4ff; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-title">🚚 货运共路距离计算器</div>
+            <div class="header-sub">智能规划最优装卸顺序 ｜ 不绕路 不重复 不空档</div>
+        </div>
+        <div class="glass-card" style="padding:18px; margin-bottom:14px;">
+            <div class="group-title"><span>📦 主单（必填）</span><span class="line"></span></div>
+            <div class="form-group">
+                <div class="form-label"><span class="point-tag point-a">A</span>装货点<span class="label-desc">主单起点</span></div>
+                <div class="input-wrap">
+                    <input type="text" id="addrA" class="tech-input" placeholder="粘贴客户微信地址，自动清理" onpaste="handlePaste('addrA')">
+                    <button type="button" class="clean-icon-btn" onclick="cleanInput('addrA')" title="清理提取地址">🧹</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="form-label"><span class="point-tag point-d">D</span>卸货点<span class="label-desc">主单终点</span></div>
+                <div class="input-wrap">
+                    <input type="text" id="addrD" class="tech-input" placeholder="粘贴客户微信地址，自动清理" onpaste="handlePaste('addrD')">
+                    <button type="button" class="clean-icon-btn" onclick="cleanInput('addrD')" title="清理提取地址">🧹</button>
+                </div>
+            </div>
+            <div class="group-title"><span>📦 拼单（选填，不填只看主单路线）</span><span class="line"></span></div>
+            <div class="form-group">
+                <div class="form-label"><span class="point-tag point-b">B</span>装货点<span class="label-desc">拼单起点</span></div>
+                <div class="input-wrap">
+                    <input type="text" id="addrB" class="tech-input" placeholder="选填：拼单装货点，粘贴地址自动清理" onpaste="handlePaste('addrB')">
+                    <button type="button" class="clean-icon-btn" onclick="cleanInput('addrB')" title="清理提取地址">🧹</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="form-label"><span class="point-tag point-c">C</span>卸货点<span class="label-desc">拼单终点</span></div>
+                <div class="input-wrap">
+                    <input type="text" id="addrC" class="tech-input" placeholder="选填：拼单卸货点，粘贴地址自动清理" onpaste="handlePaste('addrC')">
+                    <button type="button" class="clean-icon-btn" onclick="cleanInput('addrC')" title="清理提取地址">🧹</button>
+                </div>
+            </div>
+            <button id="calcBtn" class="calc-btn" onclick="calcRoute()">智能规划路线</button>
+            <div style="text-align:center;margin-top:12px;">
+                <button type="button" class="clear-link" onclick="clearAddr()">清空全部地址</button>
+            </div>
+            <div class="status-text" id="status"></div>
+        </div>
+        <div id="errorBox" style="display:none;"></div>
+        <div id="resultBox" style="display:none;">
+            <!-- 小客车路线提示（主单/拼单均为小客车路线） -->
+            <div class="route-notice">
+                <div class="notice-icon">ℹ️</div>
+                <div class="notice-body">
+                    <div class="notice-title">小客车参考路线（非货车导航）</div>
+                    <div class="notice-desc">
+                        本路线基于高德驾车路线，已自动从全部候选方案中选取<b>里程最短</b>的一条；<b>未考虑货车限高、限宽、限重、限行</b>。
+                        黄牌货车实际行驶请以高德 App「货车导航」为准，避免闯禁行违章。最短路线可能多走国道省道、耗时更长<span id="noticePathCount"></span>。
+                    </div>
+                </div>
+            </div>
+            <!-- 拼单合格性判定横幅 -->
+            <div class="judge-banner" id="judgeBanner">
+                <div class="judge-icon" id="judgeIcon">✅</div>
+                <div class="judge-info">
+                    <div class="judge-title" id="judgeTitle">-</div>
+                    <div class="judge-desc" id="judgeDesc">-</div>
+                    <div class="judge-metrics">
+                        <span class="judge-metric">绕路率 <b id="metricDetour">-</b></span>
+                        <span class="judge-metric">拼单共路率 <b id="metricShared">-</b></span>
+                    </div>
+                </div>
+            </div>
+            <!-- 路线流程图 -->
+            <div class="glass-card" style="padding:16px; margin-bottom:14px;">
+                <div class="optimal-badge">✨ 已规划最优路线</div>
+                <div class="route-flow" id="routeFlow"></div>
+            </div>
+            <!-- 一览 -->
+            <div class="glass-card" style="padding:18px; margin-bottom:14px;">
+                <div class="section-title">📊 数据一览</div>
+                <div class="stat-grid">
+                    <div class="stat-card highlight">
+                        <div class="stat-label">最优路线总里程</div>
+                        <div class="stat-value" id="ovTotal">-<span class="stat-unit">km</span></div>
+                    </div>
+                    <div class="stat-card" id="sharedStatCard">
+                        <div class="stat-label">共路里程</div>
+                        <div class="stat-value" id="ovShared">-<span class="stat-unit">km</span></div>
+                    </div>
+                    <div class="stat-card cyan">
+                        <div class="stat-label">主单行驶（A装→D卸）</div>
+                        <div class="stat-value" id="ovMain">-<span class="stat-unit">km</span></div>
+                    </div>
+                    <div class="stat-card" id="subStatCard">
+                        <div class="stat-label">拼单行驶（B装→C卸）</div>
+                        <div class="stat-value" id="ovSub">-<span class="stat-unit">km</span></div>
+                    </div>
+                </div>
+            </div>
+            <!-- 拼单绕路 -->
+            <div class="detour-card" id="detourCard">
+                <div class="detour-head">
+                    <div>
+                        <div class="detour-title">🔀 拼单绕路</div>
+                        <div class="detour-desc">相比主单直达 A→D 多跑的里程</div>
+                    </div>
+                    <div class="detour-big"><span id="detourKm">-</span><span class="detour-unit">公里</span></div>
+                </div>
+                <div class="detour-compare">
+                    <span>主单直达 <span class="num" id="detDirect">-</span> km</span>
+                    <span class="arrow">→</span>
+                    <span>实际总里程 <span class="num" id="detTotal">-</span> km</span>
+                </div>
+            </div>
+            <!-- 共路英雄卡片 -->
+            <div class="shared-hero" id="sharedHeroCard">
+                <div class="hero-label">⭐ 共路路段（主单+拼单同程）</div>
+                <div><span class="hero-num" id="sharedDist">-</span><span class="hero-unit">公里</span></div>
+                <div class="progress-track"><div class="progress-fill" id="ratioFill" style="width:0%"></div></div>
+                <div class="progress-label" id="ratioText">共路占总里程 -</div>
+            </div>
+            <!-- 地图 -->
+            <div class="map-panel-wrap" id="mapPanel">
+                <div class="map-panel-head" onclick="toggleMap()">
+                    <span class="head-title">🗺️ 路线地图</span>
+                    <span class="head-arrow">▼</span>
+                </div>
+                <div class="map-panel-body">
+                    <div id="mapContainer">
+                        <div class="map-placeholder" id="mapPlaceholder">
+                            <div class="big">🗺️</div>
+                            <div>计算后将在这里显示路线地图</div>
+                        </div>
+                    </div>
+                    <div class="map-legend">
+                        <span><span class="legend-line" style="background:#00d4ff"></span>单独行驶</span>
+                        <span><span class="legend-line" style="background:#ff6b35"></span>共路（加粗）</span>
+                        <span><span class="legend-line" style="background:repeating-linear-gradient(90deg,rgba(255,255,255,0.4) 0,rgba(255,255,255,0.4) 4px,transparent 4px,transparent 8px)"></span>空驶（无货）</span>
+                    </div>
+                </div>
+            </div>
+            <!-- 明细 -->
+            <div class="glass-card" style="padding:18px;">
+                <div class="section-title">📋 分段明细</div>
+                <div id="segmentList"></div>
+                <div class="data-row total-row">
+                    <span class="row-label" style="font-weight:600;">最优路线总里程</span>
+                    <span class="row-value" id="resTotal">-<small id="timeTotal"></small></span>
+                </div>
+            </div>
+            <!-- 行程备注 -->
+            <div class="glass-card" style="padding:16px 18px; margin-top:14px;">
+                <div class="section-title">📝 行程备注</div>
+                <div id="remarkBox"></div>
+            </div>
+        </div>
+        <div class="footer-tip">
+            数据来源：高德地图 · 按实际驾车导航里程计算<br>
+            系统自动枚举6种合法装卸顺序，选总里程最短的最优路线<br>
+            地址请尽量详细（省+市+区+街道），解析更准确
+        </div>
+    </div>
+    <script src="https://webapi.amap.com/maps?v=2.0&key=3d27557bb7b7cfad571313afb5beedd5"></script>
+    <script>
+        var AMAP_WEB_KEY = '40c91067846da190bf525a5737d8ac06';
+        var map = null;
+        var mapReady = false;
+        var STORAGE_KEY = 'freight_addr_last';
+        var ADDR_IDS = ['addrA', 'addrB', 'addrC', 'addrD'];
+        // 点角色定义
+        var POINT_ROLE = {
+            A: { role: 'mainLoad', name: '主单装货', tag: 'A', color: 'orange' },
+            D: { role: 'mainUnload', name: '主单卸货', tag: 'D', color: 'orange' },
+            B: { role: 'subLoad', name: '拼单装货', tag: 'B', color: 'cyan' },
+            C: { role: 'subUnload', name: '拼单卸货', tag: 'C', color: 'cyan' }
+        };
+        // 合法路径：主单A在D前，拼单B在C前，共6种
+        var VALID_PATHS = [
+            ['A','B','C','D'],
+            ['A','B','D','C'],
+            ['A','D','B','C'],
+            ['B','A','C','D'],
+            ['B','A','D','C'],
+            ['B','C','A','D']
+        ];
+        // 全局：地理编码后的点、最优路径、路线矩阵
+        var geoPoints = {};
+        var optimalPath = null;
+        var routeMatrix = {};
+        function saveAddr() {
+            try {
+                var data = {};
+                ADDR_IDS.forEach(function(id) {
+                    data[id] = document.getElementById(id).value.trim();
+                });
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch (e) {}
+        }
+        function loadAddr() {
+            try {
+                var raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return false;
+                var data = JSON.parse(raw);
+                var hasValue = false;
+                ADDR_IDS.forEach(function(id) {
+                    if (data[id]) {
+                        document.getElementById(id).value = data[id];
+                        hasValue = true;
+                    }
+                });
+                return hasValue;
+            } catch (e) { return false; }
+        }
+        function clearAddr() {
+            ADDR_IDS.forEach(function(id) {
+                document.getElementById(id).value = '';
+            });
+            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            document.getElementById('resultBox').style.display = 'none';
+            hideError();
+            setStatus('已清空');
+            setTimeout(function() { setStatus(''); }, 1200);
+        }
+        window.addEventListener('DOMContentLoaded', function() {
+            loadAddr();
+            ADDR_IDS.forEach(function(id) {
+                document.getElementById(id).addEventListener('input', saveAddr);
+            });
+        });
+        function toggleMap() {
+            var panel = document.getElementById('mapPanel');
+            panel.classList.toggle('collapsed');
+            if (!panel.classList.contains('collapsed') && map) {
+                setTimeout(function() { map.resize(); }, 350);
+            }
+        }
+        function initMap() {
+            if (typeof AMap === 'undefined') {
+                console.warn('高德地图SDK未加载');
+                return false;
+            }
+            try {
+                map = new AMap.Map('mapContainer', {
+                    zoom: 5,
+                    center: [110, 23.5],
+                    resizeEnable: true
+                });
+                mapReady = true;
+                document.getElementById('mapPlaceholder').style.display = 'none';
+                return true;
+            } catch (e) {
+                console.warn('地图初始化失败:', e);
+                return false;
+            }
+        }
+        function jsonp(url, timeout) {
+            timeout = timeout || 15000;
+            return new Promise(function(resolve, reject) {
+                var cbName = 'amap_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+                var script = document.createElement('script');
+                var timer = setTimeout(function() {
+                    reject(new Error('请求超时，请检查网络连接'));
+                    cleanup();
+                }, timeout);
+                function cleanup() {
+                    clearTimeout(timer);
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                    delete window[cbName];
+                }
+                window[cbName] = function(data) {
+                    resolve(data);
+                    cleanup();
+                };
+                script.onerror = function() {
+                    reject(new Error('网络请求失败，请检查网络连接'));
+                    cleanup();
+                };
+                script.src = url + (url.indexOf('?') > -1 ? '&' : '?') + 'callback=' + cbName;
+                document.body.appendChild(script);
+            });
+        }
+        function sleep(ms) {
+            return new Promise(function(r) { setTimeout(r, ms); });
+        }
+        // 从地址中提取城市名，作为地理编码city参数提高准确度
+        function extractCity(address) {
+            var m = address.match(/([\u4e00-\u9fa5]{2,8}?(?:省|自治区|特别行政区))?\s*([\u4e00-\u9fa5]{2,10}?(?:市|自治州|盟|地区))/);
+            if (m && m[2]) return m[2];
+            return '';
+        }
+        // 地址降级：逐步去掉细节，提高解析成功率
+        function degradeAddress(address, level) {
+            var addr = address.trim();
+            if (level === 0) return addr;
+            if (level >= 1) {
+                addr = addr.replace(/[\u4e00-\u9fa5\d]+(?:号|弄|栋|幢|单元|室|楼|层)\s*[\u4e00-\u9fa5\d]*(?:号|室|层)?/g, '');
+            }
+            if (level >= 2) {
+                addr = addr.replace(/[\u4e00-\u9fa5\d]+(?:路|街|大道|巷|胡同|里|坊)\s*/g, '');
+            }
+            if (level >= 3) {
+                addr = addr.replace(/[\u4e00-\u9fa5]{2,8}(?:镇|乡|街道|街道办|办事处)\s*/g, '');
+            }
+            return addr.replace(/\s+/g, ' ').trim();
+        }
+        // 单次地理编码请求
+        function geocodeOnce(address, city) {
+            var url = 'https://restapi.amap.com/v3/geocode/geo?address='
+                + encodeURIComponent(address) + '&key=' + AMAP_WEB_KEY + '&output=JSON';
+            if (city) url += '&city=' + encodeURIComponent(city);
+            return jsonp(url).then(function(data) {
+                if (data.status !== '1' || !data.geocodes || !data.geocodes.length) {
+                    var info = data.info || '未知错误';
+                    if (info === 'INVALID_USER_KEY') throw new Error('高德KEY无效，请检查KEY是否正确');
+                    if (info === 'USERKEY_PLAT_NOMATCH') throw new Error('KEY类型不匹配，请使用「Web服务」类型的KEY');
+                    if (info === 'DAILY_QUERY_OVER_LIMIT') throw new Error('今日调用次数已超限');
+                    throw new Error('NO_RESULT');
+                }
+                // 选择匹配精度最高的结果（level数字越小越精确）
+                var best = data.geocodes[0];
+                var bestLevel = parseInt(best.level) || 99;
+                for (var i = 1; i < data.geocodes.length; i++) {
+                    var lv = parseInt(data.geocodes[i].level) || 99;
+                    if (lv < bestLevel) {
+                        best = data.geocodes[i];
+                        bestLevel = lv;
+                    }
+                }
+                var g = best;
+                var loc = g.location.split(',');
+                return {
+                    lng: loc[0],
+                    lat: loc[1],
+                    formatted: g.formatted_address,
+                    province: g.province,
+                    city: g.city,
+                    district: g.district
+                };
+            });
+        }
+        // 增强版地理编码：4级地址降级 + 每级2次重试
+        async function geocode(address, tagName) {
+            var city = extractCity(address);
+            var lastErr = null;
+            for (var level = 0; level <= 3; level++) {
+                var degraded = degradeAddress(address, level);
+                if (!degraded) continue;
+                for (var attempt = 0; attempt < 2; attempt++) {
+                    try {
+                        return await geocodeOnce(degraded, city);
+                    } catch (e) {
+                        lastErr = e;
+                        if (e.message === 'INVALID_USER_KEY' || e.message === 'USERKEY_PLAT_NOMATCH' || e.message === 'DAILY_QUERY_OVER_LIMIT') {
+                            throw e;
+                        }
+                        await sleep(300 + attempt * 200);
+                    }
+                }
+            }
+            throw new Error('地址解析失败：' + (tagName || '') + '「' + address + '」，请检查地址是否完整，建议补充省+市+区信息');
+        }
+        async function driving(origin, destination) {
+            var url = 'https://restapi.amap.com/v3/direction/driving?'
+                + 'origin=' + origin.lng + ',' + origin.lat
+                + '&destination=' + destination.lng + ',' + destination.lat
+                + '&key=' + AMAP_WEB_KEY + '&output=JSON&strategy=10&extensions=all';
+            var lastErr = null;
+            for (var attempt = 0; attempt < 3; attempt++) {
+                try {
+                    var data = await jsonp(url);
+                    if (data.status !== '1' || !data.route || !data.route.paths || !data.route.paths.length) {
+                        var info = data.info || '未知错误';
+                        throw new Error('路线规划失败（' + info + '）');
+                    }
+                    var allPaths = data.route.paths;
+                    // 不写死下标，遍历全部方案，取里程最短的一条
+                    var path = allPaths[0];
+                    for (var pi = 1; pi < allPaths.length; pi++) {
+                        if (parseFloat(allPaths[pi].distance) < parseFloat(path.distance)) {
+                            path = allPaths[pi];
+                        }
+                    }
+                    var coords = [];
+                    if (path.steps && path.steps.length) {
+                        path.steps.forEach(function(step) {
+                            if (step.polyline) {
+                                var points = step.polyline.split(';');
+                                points.forEach(function(p) {
+                                    var ll = p.split(',');
+                                    if (ll.length === 2) {
+                                        coords.push([parseFloat(ll[0]), parseFloat(ll[1])]);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    return {
+                        distance: parseFloat(path.distance),
+                        duration: parseFloat(path.duration),
+                        coords: coords,
+                        steps: path.steps || [],
+                        pathCount: data.route.paths.length
+                    };
+                } catch (e) {
+                    lastErr = e;
+                    await sleep(400 + attempt * 300);
+                }
+            }
+            throw lastErr;
+        }
+        // 获取两点间路线（自动处理反方向）
+        function getRoute(from, to) {
+            if (routeMatrix[from] && routeMatrix[from][to]) {
+                return routeMatrix[from][to];
+            }
+            var r = routeMatrix[to][from];
+            return {
+                distance: r.distance,
+                duration: r.duration,
+                coords: r.coords.slice().reverse(),
+                steps: r.steps ? r.steps.slice().reverse() : []
+            };
+        }
+        // 计算路径总里程
+        function pathDistance(path) {
+            var total = 0;
+            for (var i = 0; i < path.length - 1; i++) {
+                total += getRoute(path[i], path[i+1]).distance;
+            }
+            return total;
+        }
+        // 找最优路径
+        function findOptimalPath() {
+            var best = null;
+            var bestDist = Infinity;
+            VALID_PATHS.forEach(function(path) {
+                var d = pathDistance(path);
+                if (d < bestDist) {
+                    bestDist = d;
+                    best = path;
+                }
+            });
+            return best;
+        }
+        // 分析路径各段类型
+        function analyzePath(path) {
+            var idxA = path.indexOf('A');
+            var idxD = path.indexOf('D');
+            var idxB = path.indexOf('B');
+            var idxC = path.indexOf('C');
+            // 主单路段：A到D之间
+            var mainSegs = [];
+            var ms = Math.min(idxA, idxD), me = Math.max(idxA, idxD);
+            for (var i = ms; i < me; i++) {
+                mainSegs.push(path[i] + '-' + path[i+1]);
+            }
+            // 拼单路段：B到C之间
+            var subSegs = [];
+            var ss = Math.min(idxB, idxC), se = Math.max(idxB, idxC);
+            for (var i = ss; i < se; i++) {
+                subSegs.push(path[i] + '-' + path[i+1]);
+            }
+            // 共路 = 交集
+            var sharedSegs = mainSegs.filter(function(s) {
+                return subSegs.indexOf(s) !== -1;
+            });
+            // 各段详情
+            var segments = [];
+            for (var i = 0; i < path.length - 1; i++) {
+                var key = path[i] + '-' + path[i+1];
+                var type;
+                if (sharedSegs.indexOf(key) !== -1) type = 'shared';
+                else if (mainSegs.indexOf(key) !== -1) type = 'main';
+                else if (subSegs.indexOf(key) !== -1) type = 'sub';
+                else type = 'empty';
+                var r = getRoute(path[i], path[i+1]);
+                segments.push({
+                    from: path[i],
+                    to: path[i+1],
+                    key: key,
+                    type: type,
+                    distance: r.distance,
+                    duration: r.duration,
+                    coords: r.coords,
+                    steps: r.steps || []
+                });
+            }
+            // 统计
+            var sharedDist = 0, mainDist = 0, subDist = 0, emptyDist = 0;
+            segments.forEach(function(seg) {
+                if (seg.type === 'shared') sharedDist += seg.distance;
+                else if (seg.type === 'main') mainDist += seg.distance;
+                else if (seg.type === 'sub') subDist += seg.distance;
+                else emptyDist += seg.distance;
+            });
+            return {
+                segments: segments,
+                sharedSegs: sharedSegs,
+                mainSegs: mainSegs,
+                subSegs: subSegs,
+                sharedDist: sharedDist,
+                mainDist: mainDist + sharedDist,
+                subDist: subDist + sharedDist,
+                emptyDist: emptyDist
+            };
+        }
+        // adcode前两位 → 省级名称映射
+        var PROVINCE_PREFIX_MAP = {
+            '11': '北京市', '12': '天津市', '13': '河北省', '14': '山西省', '15': '内蒙古自治区',
+            '21': '辽宁省', '22': '吉林省', '23': '黑龙江省',
+            '31': '上海市', '32': '江苏省', '33': '浙江省', '34': '安徽省', '35': '福建省', '36': '江西省', '37': '山东省',
+            '41': '河南省', '42': '湖北省', '43': '湖南省', '44': '广东省', '45': '广西壮族自治区', '46': '海南省',
+            '50': '重庆市', '51': '四川省', '52': '贵州省', '53': '云南省', '54': '西藏自治区',
+            '61': '陕西省', '62': '甘肃省', '63': '青海省', '64': '宁夏回族自治区', '65': '新疆维吾尔自治区',
+            '71': '台湾省', '81': '香港特别行政区', '82': '澳门特别行政区'
+        };
+        // 全局去重：每个地方只保留首次出现，保持经过顺序
+        function dedupeKeepOrder(arr) {
+            var out = [];
+            arr.forEach(function(v) {
+                if (v && out.indexOf(v) === -1) out.push(v);
+            });
+            return out;
+        }
+        // 从文本中提取“XX高速入口/出口”名称：从关键字向前回溯，遇到动词或标点即停止
+        function extractGateNames(text, suffix) {
+            var names = [];
+            var stopChars = /[\s，,。；;、沿途从朝在到由经径驶入]/;
+            var idx = 0;
+            while (true) {
+                var p = text.indexOf(suffix, idx);
+                if (p === -1) break;
+                var start = p;
+                while (start > 0 && !stopChars.test(text.charAt(start - 1))) start--;
+                var name = text.substring(start, p + suffix.length);
+                if (name && names.indexOf(name) === -1) names.push(name);
+                idx = p + suffix.length;
+            }
+            return names;
+        }
+        // 判断是否为高速主路（排除入口/出口）
+        function isHighwayRoad(road) {
+            return road.indexOf('高速') !== -1 && road.indexOf('出口') === -1 && road.indexOf('入口') === -1;
+        }
+        // 步骤中是否含高速线索：road / toll_road / instruction 任一命中
+        function hasHighwayHint(step) {
+            var road = step.road || '';
+            var tr = Array.isArray(step.toll_road) ? step.toll_road.join('') : (step.toll_road || '');
+            var inst = step.instruction || '';
+            return isHighwayRoad(road) || isHighwayRoad(tr) || inst.indexOf('高速') !== -1;
+        }
+        // 提取高速出入口：先匹配“高速入口/出口”名称，再用收费站节点兜底
+        function extractHighwayGates(segments) {
+            var entries = [], exits = [];
+            var entryAt = [], exitAt = [];
+            segments.forEach(function(seg) {
+                var steps = seg.steps || [];
+                // 第一遍：提取明确的入口/出口名称
+                steps.forEach(function(step, i) {
+                    var text = (step.road || '') + ' ' + (step.instruction || '');
+                    extractGateNames(text, '高速入口').forEach(function(n) {
+                        if (entries.indexOf(n) === -1) { entries.push(n); entryAt.push(i); }
+                    });
+                    extractGateNames(text, '高速出口').forEach(function(n) {
+                        if (exits.indexOf(n) === -1) { exits.push(n); exitAt.push(i); }
+                    });
+                });
+                // 第二遍：收费站兜底（部分下高速点只叫“XX立交桥”）
+                steps.forEach(function(step, i) {
+                    if (step.assistant_action !== '到达收费站') return;
+                    var road = step.road || '';
+                    var prev = false, nxt = false;
+                    for (var j = Math.max(0, i - 15); j < i; j++) {
+                        if (hasHighwayHint(steps[j])) { prev = true; break; }
+                    }
+                    for (var k = i + 1; k < Math.min(steps.length, i + 6); k++) {
+                        if (hasHighwayHint(steps[k])) { nxt = true; break; }
+                    }
+                    if (!prev && nxt) {
+                        // 上高速：同step或其后已有入口名则跳过
+                        if (!entryAt.some(function(p) { return p >= i; })) {
+                            var nm = road.replace(/立交桥?$/, '') + '收费站';
+                            if (entries.indexOf(nm) === -1) { entries.push(nm); entryAt.push(i); }
+                        }
+                    } else if (prev && !nxt) {
+                        // 下高速：同step或其前已有出口名则跳过
+                        if (!exitAt.some(function(p) { return p <= i; })) {
+                            var nm2 = road.replace(/立交桥?$/, '') + '收费站';
+                            if (exits.indexOf(nm2) === -1) { exits.push(nm2); exitAt.push(i); }
+                        }
+                    }
+                });
+            });
+            return { entries: entries, exits: exits };
+        }
+        // 提取途经省/市/区县：来自steps的cities字段（adcode前两位映射省份）
+        function extractPassedRegions(segments) {
+            var provinces = [], cities = [], districts = [];
+            segments.forEach(function(seg) {
+                (seg.steps || []).forEach(function(step) {
+                    (step.cities || []).forEach(function(c) {
+                        var prov = PROVINCE_PREFIX_MAP[String(c.adcode).substring(0, 2)] || '';
+                        if (prov) provinces.push(prov);
+                        if (c.name) cities.push(c.name);
+                        (c.districts || []).forEach(function(d) {
+                            if (d.name) districts.push(d.name);
+                        });
+                    });
+                });
+            });
+            return {
+                provinces: dedupeKeepOrder(provinces),
+                cities: dedupeKeepOrder(cities),
+                districts: dedupeKeepOrder(districts)
+            };
+        }
+        // 汇总行程备注数据
+        function buildRemarks(analysis) {
+            return {
+                gates: extractHighwayGates(analysis.segments),
+                regions: extractPassedRegions(analysis.segments)
+            };
+        }
+        // 拼单合格性阈值（百分比，可按实际接单标准调整）
+        var PIN_RULES = {
+            detourGood: 15,   // 绕路率≤15%为顺路
+            detourMax: 30,    // 绕路率>30%不合格
+            sharedGood: 50,   // 拼单共路率≥50%为优
+            sharedMin: 30     // 拼单共路率<30%不合格
+        };
+        // 拼单合格性判定：依据绕路率与拼单共路率
+        function judgePinDan(detourKm, directAD, analysis) {
+            var detourRatio = directAD > 0 ? (detourKm / directAD * 100) : 0;
+            var subDist = analysis.subDist;
+            var sharedRatio = subDist > 0 ? (analysis.sharedDist / subDist * 100) : 0;
+            var level, title, desc, reasons = [];
+            if (analysis.sharedDist <= 0) {
+                level = 'bad';
+                title = '拼单不合格';
+                desc = '拼单与主单完全不顺路，没有共路路段，不建议拼单';
+            } else if (detourRatio > PIN_RULES.detourMax || sharedRatio < PIN_RULES.sharedMin) {
+                level = 'bad';
+                title = '拼单不合格';
+                if (detourRatio > PIN_RULES.detourMax) reasons.push('绕路率 ' + detourRatio.toFixed(1) + '% 超过 ' + PIN_RULES.detourMax + '%');
+                if (sharedRatio < PIN_RULES.sharedMin) reasons.push('共路率仅 ' + sharedRatio.toFixed(1) + '% 低于 ' + PIN_RULES.sharedMin + '%');
+                desc = reasons.join('；') + '，不建议拼单';
+            } else if (detourRatio <= PIN_RULES.detourGood && sharedRatio >= PIN_RULES.sharedGood) {
+                level = 'good';
+                title = '拼单合格';
+                desc = '路线顺路、共路比例高，建议拼单';
+            } else {
+                level = 'warn';
+                title = '拼单一般';
+                if (detourRatio > PIN_RULES.detourGood) reasons.push('绕路率 ' + detourRatio.toFixed(1) + '%');
+                if (sharedRatio < PIN_RULES.sharedGood) reasons.push('共路率 ' + sharedRatio.toFixed(1) + '%');
+                desc = '可以拼但需谈好拼单运费：' + reasons.join('，');
+            }
+            return {
+                level: level, title: title, desc: desc,
+                detourRatio: detourRatio, sharedRatio: sharedRatio
+            };
+        }
+        function drawRoute(analysis) {
+            if (!mapReady || !map) return;
+            try {
+                map.clearMap();
+                analysis.segments.forEach(function(seg) {
+                    var color, weight;
+                    if (seg.type === 'shared') { color = '#ff6b35'; weight = 9; }
+                    else if (seg.type === 'empty') { color = 'rgba(255,255,255,0.4)'; weight = 5; }
+                    else { color = '#00d4ff'; weight = 6; }
+                    if (seg.coords && seg.coords.length >= 2) {
+                        var polyline = new AMap.Polyline({
+                            path: seg.coords,
+                            strokeColor: color,
+                            strokeWeight: weight,
+                            strokeOpacity: seg.type === 'empty' ? 0.6 : 0.9,
+                            strokeStyle: seg.type === 'empty' ? 'dashed' : 'solid',
+                            lineJoin: 'round'
+                        });
+                        polyline.setMap(map);
+                    }
+                });
+                optimalPath.forEach(function(tag) {
+                    var p = geoPoints[tag];
+                    var role = POINT_ROLE[tag];
+                    var color = role.color === 'orange' ? '#ff6b35' : '#00d4ff';
+                    var marker = new AMap.Marker({
+                        position: [p.lng, p.lat],
+                        content: '<div style="background:' + color + ';color:#fff;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-weight:bold;font-size:15px;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.4);">' + tag + '</div>',
+                        anchor: 'bottom-center',
+                        offset: new AMap.Pixel(0, 0)
+                    });
+                    marker.setMap(map);
+                });
+                setTimeout(function() {
+                    map.setFitView(null, false, [50, 50, 50, 50]);
+                }, 200);
+            } catch (e) {
+                console.warn('绘制路线失败:', e);
+            }
+        }
+        function fmtDist(meters) { return (meters / 1000).toFixed(1); }
+        function fmtTime(seconds) {
+            var min = Math.round(seconds / 60);
+            if (min < 60) return '约 ' + min + ' 分钟';
+            var h = Math.floor(min / 60);
+            var m = min % 60;
+            return '约 ' + h + ' 小时 ' + (m > 0 ? m + ' 分钟' : '');
+        }
+        function shortName(p) {
+            if (p.city && p.district) return p.city.replace(/市$/, '') + '·' + p.district;
+            if (p.city) return p.city;
+            if (p.province) return p.province;
+            return p.formatted || '';
+        }
+        function setStatus(msg) {
+            document.getElementById('status').innerHTML = msg
+                ? '<span class="loading-dot"></span>' + msg
+                : '';
+        }
+        function showError(msg) {
+            var box = document.getElementById('errorBox');
+            box.innerHTML = '<div class="error-box">⚠️ ' + msg + '</div>';
+            box.style.display = 'block';
+        }
+        function hideError() {
+            document.getElementById('errorBox').style.display = 'none';
+        }
+        function cleanAddress(raw) {
+            // 按行处理，避免全局正则误删地址中的关键词
+            var lines = raw.split(/[\n\r]+/);
+            var addrLines = [];
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                if (!line) continue;
+                // 跳过纯标签行（单独一行的收货人/电话等）
+                if (/^(收货人|联系人|发货人|姓名|收件人|电话|手机|联系电话|邮编|邮政编码)\s*[:：]/.test(line)) continue;
+                // 跳过纯手机号/座机号行
+                if (/^1[3-9]\d{9}$/.test(line)) continue;
+                if (/^0\d{2,3}[-\s]?\d{7,8}$/.test(line)) continue;
+                // 行首地址标签，提取后面内容
+                line = line.replace(/^(收货地址|发货地址|装货地址|卸货地址|详细地址|收货|发货|地址|所在地区)\s*[:：]?\s*/, '');
+                // 内联标签必须带冒号才清理，避免误删"联系人路"等地名
+                line = line.replace(/(收货人|联系人|发货人|姓名|收件人)\s*[:：]\s*[\u4e00-\u9fa5A-Za-z·]{2,5}\s*/g, '');
+                line = line.replace(/1[3-9]\d{9}/g, '');
+                line = line.replace(/0\d{2,3}[-\s]?\d{7,8}/g, '');
+                line = line.replace(/[（(]\s*[0-9]{4,6}\s*[）)]/g, '');
+                line = line.trim();
+                if (line) addrLines.push(line);
+            }
+            return addrLines.join(' ').replace(/\s+/g, ' ').trim();
+        }
+        function handlePaste(inputId) {
+            setTimeout(function() {
+                cleanInput(inputId);
+            }, 50);
+        }
+        function cleanInput(inputId) {
+            var el = document.getElementById(inputId);
+            var raw = el.value;
+            if (!raw.trim()) return;
+            var clean = cleanAddress(raw);
+            if (clean && clean !== raw) {
+                el.value = clean;
+                saveAddr();
+            }
+        }
+        // 导航：最优路径的第segIndex段
+        function navigateSegment(segIndex) {
+            if (!optimalPath) { alert('请先计算路线'); return; }
+            var from = optimalPath[segIndex];
+            var to = optimalPath[segIndex + 1];
+            var fp = geoPoints[from], tp = geoPoints[to];
+            var url = 'https://uri.amap.com/navigation?from=' + fp.lng + ',' + fp.lat
+                + '&to=' + tp.lng + ',' + tp.lat
+                + '&mode=car&policy=1&src=freight_calc&coordinate=gaode&callnative=1';
+            window.open(url, '_blank');
+        }
+        // 渲染路线流程图
+        function renderRouteFlow(path, analysis) {
+            var html = '';
+            for (var i = 0; i < path.length; i++) {
+                var tag = path[i];
+                var role = POINT_ROLE[tag];
+                var color = role.color === 'orange'
+                    ? 'linear-gradient(135deg,#ff6b35,#ff8c5a)'
+                    : 'linear-gradient(135deg,#00d4ff,#00b8e6)';
+                html += '<div class="route-node">'
+                    + '<div class="node-dot" style="background:' + color + '">' + tag + '</div>'
+                    + '<div class="node-role">' + role.name + '</div>'
+                    + '<div class="node-name">' + shortName(geoPoints[tag]) + '</div>'
+                    + '</div>';
+                if (i < path.length - 1) {
+                    var seg = analysis.segments[i];
+                    var lineClass = seg.type === 'shared' ? 'shared' : (seg.type === 'empty' ? 'empty' : 'solo');
+                    html += '<div class="route-line ' + lineClass + '">'
+                        + '<span class="line-dist">' + fmtDist(seg.distance) + 'km</span>'
+                        + '</div>';
+                }
+            }
+            document.getElementById('routeFlow').innerHTML = html;
+        }
+        // 渲染分段明细
+        function renderSegments(analysis) {
+            var html = '';
+            analysis.segments.forEach(function(seg, idx) {
+                var rowClass, badge, badgeText, navClass;
+                if (seg.type === 'shared') {
+                    rowClass = 'shared-row';
+                    badge = 'badge-shared';
+                    badgeText = '共路';
+                    navClass = 'shared';
+                } else if (seg.type === 'empty') {
+                    rowClass = 'empty-row';
+                    badge = 'badge-empty';
+                    badgeText = '空驶';
+                    navClass = '';
+                } else if (seg.type === 'main') {
+                    rowClass = '';
+                    badge = 'badge-main';
+                    badgeText = '主单';
+                    navClass = '';
+                } else {
+                    rowClass = '';
+                    badge = 'badge-sub';
+                    badgeText = '拼单';
+                    navClass = '';
+                }
+                html += '<div class="data-row ' + rowClass + '">'
+                    + '<span class="row-label">' + seg.from + ' → ' + seg.to
+                    + '<span class="badge ' + badge + '">' + badgeText + '</span>'
+                    + '<button class="navi-pill ' + navClass + '" onclick="navigateSegment(' + idx + ')">🧭 导航</button>'
+                    + '</span>'
+                    + '<span class="row-value">' + fmtDist(seg.distance) + ' km<small>' + fmtTime(seg.duration) + '</small></span>'
+                    + '</div>';
+            });
+            document.getElementById('segmentList').innerHTML = html;
+        }
+        // 渲染行程备注：高速出入口 + 途经省市县
+        function renderRemarks(analysis) {
+            var data = buildRemarks(analysis);
+            var g = data.gates, r = data.regions;
+            var html = '';
+            function chain(list) {
+                return list.map(function(v) { return '<span>' + v + '</span>'; })
+                    .join('<span class="arrow">→</span>');
+            }
+            // 上高速入口
+            html += '<div class="remark-block"><div class="remark-head">🛣️ 上高速入口<span class="remark-count">共 ' + g.entries.length + ' 处</span></div>';
+            html += g.entries.length
+                ? '<div class="remark-tags">' + g.entries.map(function(e) { return '<span class="remark-tag entry">' + e + '</span>'; }).join('') + '</div>'
+                : '<div class="remark-empty">全程未上高速（以国道/省道/城市道路为主）</div>';
+            html += '</div>';
+            // 下高速出口
+            html += '<div class="remark-block"><div class="remark-head">🚪 下高速出口<span class="remark-count">共 ' + g.exits.length + ' 处</span></div>';
+            html += g.exits.length
+                ? '<div class="remark-tags">' + g.exits.map(function(e) { return '<span class="remark-tag exit">' + e + '</span>'; }).join('') + '</div>'
+                : '<div class="remark-empty">全程无高速出口记录</div>';
+            html += '</div>';
+            // 途经省份
+            html += '<div class="remark-block"><div class="remark-head">📍 途经省份<span class="remark-count">共 ' + r.provinces.length + ' 个</span></div>';
+            html += r.provinces.length ? '<div class="remark-chain">' + chain(r.provinces) + '</div>' : '<div class="remark-empty">暂无省份数据</div>';
+            html += '</div>';
+            // 途经城市
+            html += '<div class="remark-block"><div class="remark-head">🏙️ 途经城市<span class="remark-count">共 ' + r.cities.length + ' 个</span></div>';
+            html += r.cities.length ? '<div class="remark-chain">' + chain(r.cities) + '</div>' : '<div class="remark-empty">暂无城市数据</div>';
+            html += '</div>';
+            // 途经区县
+            html += '<div class="remark-block"><div class="remark-head">🗺️ 途经区/县<span class="remark-count">共 ' + r.districts.length + ' 个</span></div>';
+            html += r.districts.length ? '<div class="remark-chain">' + chain(r.districts) + '</div>' : '<div class="remark-empty">暂无区县数据</div>';
+            html += '</div>';
+            document.getElementById('remarkBox').innerHTML = html;
+        }
+        // 渲染拼单合格性横幅
+        function renderJudgeBanner(verdict) {
+            var banner = document.getElementById('judgeBanner');
+            var iconMap = { good: '✅', warn: '⚠️', bad: '❌' };
+            banner.className = 'judge-banner ' + verdict.level;
+            document.getElementById('judgeIcon').innerText = iconMap[verdict.level];
+            document.getElementById('judgeTitle').innerText = verdict.title;
+            document.getElementById('judgeDesc').innerText = verdict.desc;
+            document.getElementById('metricDetour').innerText = verdict.detourRatio.toFixed(1) + '%';
+            document.getElementById('metricShared').innerText = verdict.sharedRatio.toFixed(1) + '%';
+        }
+        // 控制拼单相关模块显隐：主单模式隐藏，拼单模式显示
+        function setPinUI(hasPin) {
+            var display = hasPin ? 'block' : 'none';
+            document.getElementById('judgeBanner').style.display = hasPin ? 'flex' : 'none';
+            document.getElementById('sharedStatCard').style.display = display;
+            document.getElementById('subStatCard').style.display = display;
+            document.getElementById('detourCard').style.display = display;
+            document.getElementById('sharedHeroCard').style.display = display;
+        }
+        async function calcRoute() {
+            var addrA = document.getElementById('addrA').value.trim();
+            var addrB = document.getElementById('addrB').value.trim();
+            var addrC = document.getElementById('addrC').value.trim();
+            var addrD = document.getElementById('addrD').value.trim();
+            // 主单 A、D 必填
+            if (!addrA || !addrD) {
+                showError('主单装货点 A 和卸货点 D 必须填写');
+                return;
+            }
+            // 拼单 B、C 必须成对出现
+            if ((addrB && !addrC) || (!addrB && addrC)) {
+                showError('拼单装货点 B 和卸货点 C 要一起填写；只看主单路线请两个都留空');
+                return;
+            }
+            var hasPin = !!(addrB && addrC);
+            hideError();
+            document.getElementById('resultBox').style.display = 'none';
+            var btn = document.getElementById('calcBtn');
+            btn.disabled = true;
+            btn.innerText = '规划中...';
+            document.getElementById('mapPanel').classList.remove('collapsed');
+            if (!mapReady) {
+                initMap();
+            }
+            try {
+                // 解析地址：主单模式只解析 A、D，拼单模式解析全部
+                var addrMap = { A: addrA, B: addrB, C: addrC, D: addrD };
+                var tags = hasPin ? ['A', 'B', 'C', 'D'] : ['A', 'D'];
+                geoPoints = {};
+                for (var ti = 0; ti < tags.length; ti++) {
+                    var tag = tags[ti];
+                    setStatus('正在解析地址 ' + tag + '（' + (ti + 1) + '/' + tags.length + '）...');
+                    geoPoints[tag] = await geocode(addrMap[tag], tag);
+                }
+                var analysis, verdict = null, directAD, detourKm = 0, ratio = 0;
+                if (hasPin) {
+                    // 拼单模式：计算4点间6段距离矩阵（受控并发）
+                    setStatus('正在计算6段路线矩阵（受控并发）...');
+                    var pairs = [['A','B'],['A','C'],['A','D'],['B','C'],['B','D'],['C','D']];
+                    var routeResults = new Array(pairs.length);
+                    var nextIdx = 0;
+                    async function routeWorker() {
+                        while (nextIdx < pairs.length) {
+                            var idx = nextIdx++;
+                            setStatus('正在计算路线（' + (idx + 1) + '/6）...');
+                            routeResults[idx] = await driving(geoPoints[pairs[idx][0]], geoPoints[pairs[idx][1]]);
+                        }
+                    }
+                    var workers = [];
+                    for (var w = 0; w < 2; w++) workers.push(routeWorker());
+                    await Promise.all(workers);
+                    routeMatrix = {};
+                    ['A','B','C','D'].forEach(function(k) { routeMatrix[k] = {}; });
+                    pairs.forEach(function(pair, i) {
+                        routeMatrix[pair[0]][pair[1]] = routeResults[i];
+                    });
+                    // 枚举最优路径并分析
+                    optimalPath = findOptimalPath();
+                    analysis = analyzePath(optimalPath);
+                    directAD = routeMatrix['A']['D'].distance;
+                } else {
+                    // 主单模式：只算 A→D 一段
+                    setStatus('正在计算主单路线...');
+                    var rAD = await driving(geoPoints['A'], geoPoints['D']);
+                    routeMatrix = { A: { D: rAD }, D: {} };
+                    optimalPath = ['A', 'D'];
+                    analysis = {
+                        segments: [{
+                            from: 'A', to: 'D', key: 'A-D', type: 'main',
+                            distance: rAD.distance, duration: rAD.duration,
+                            coords: rAD.coords, steps: rAD.steps
+                        }],
+                        sharedSegs: [], mainSegs: ['A-D'], subSegs: [],
+                        sharedDist: 0, mainDist: rAD.distance, subDist: 0, emptyDist: 0
+                    };
+                    directAD = rAD.distance;
+                }
+                var totalDist = 0, totalTime = 0;
+                analysis.segments.forEach(function(seg) {
+                    totalDist += seg.distance;
+                    totalTime += seg.duration;
+                });
+                detourKm = totalDist - directAD;
+                ratio = totalDist > 0 ? (analysis.sharedDist / totalDist * 100) : 0;
+                if (hasPin) {
+                    verdict = judgePinDan(detourKm, directAD, analysis);
+                }
+                // 渲染：先控制拼单模块显隐
+                var pc = routeMatrix['A'] && routeMatrix['A']['D'] ? routeMatrix['A']['D'].pathCount : 0;
+                document.getElementById('noticePathCount').innerText = pc > 1 ? '（该段高德另有 ' + (pc - 1) + ' 条备选路线）' : '';
+                setPinUI(hasPin);
+                if (hasPin) renderJudgeBanner(verdict);
+                renderRouteFlow(optimalPath, analysis);
+                document.getElementById('ovTotal').innerHTML = fmtDist(totalDist) + '<span class="stat-unit">km</span>';
+                document.getElementById('ovMain').innerHTML = fmtDist(analysis.mainDist) + '<span class="stat-unit">km</span>';
+                if (hasPin) {
+                    document.getElementById('ovShared').innerHTML = fmtDist(analysis.sharedDist) + '<span class="stat-unit">km</span>';
+                    document.getElementById('ovSub').innerHTML = fmtDist(analysis.subDist) + '<span class="stat-unit">km</span>';
+                    document.getElementById('detDirect').innerText = fmtDist(directAD);
+                    document.getElementById('detTotal').innerText = fmtDist(totalDist);
+                    document.getElementById('detourKm').innerText = fmtDist(detourKm);
+                    document.getElementById('sharedDist').innerText = fmtDist(analysis.sharedDist);
+                    document.getElementById('ratioFill').style.width = ratio + '%';
+                    document.getElementById('ratioText').innerText = '共路占总里程 ' + ratio.toFixed(1) + '%';
+                }
+                renderSegments(analysis);
+                renderRemarks(analysis);
+                document.getElementById('resTotal').innerHTML = fmtDist(totalDist) + ' km<small>' + fmtTime(totalTime) + '</small>';
+                drawRoute(analysis);
+                document.getElementById('resultBox').style.display = 'block';
+                setStatus('');
+                btn.innerText = '重新规划';
+                setTimeout(function() {
+                    document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 150);
+            } catch (e) {
+                showError(e.message);
+                setStatus('');
+                btn.innerText = '智能规划路线';
+            } finally {
+                btn.disabled = false;
+            }
+             }
+    </script>
+</body>
+</html>       
